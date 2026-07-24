@@ -36,6 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // Display dynamic current date
   const dateOptions = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
   document.getElementById('current-date').innerText = new Date().toLocaleDateString('hu-HU', dateOptions);
+
+  // Register Service Worker for PWA support
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('Service Worker registered successfully!', reg))
+      .catch(err => console.error('Service Worker registration failed:', err));
+  }
 });
 
 // Set default datetime input to now
