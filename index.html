@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DiaLife – Diabétesz Menedzser</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar / Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo-icon">
+          <i data-lucide="heart-pulse"></i>
+        </div>
+        <div class="brand-text">
+          <h1>DiaLife</h1>
+          <span>Diabétesz napló</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="dashboard">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Irányítópult</span>
+        </button>
+        <button class="nav-item" data-tab="new-entry">
+          <i data-lucide="plus-circle"></i>
+          <span>Új bejegyzés</span>
+        </button>
+        <button class="nav-item" data-tab="history">
+          <i data-lucide="history"></i>
+          <span>Naplóbejegyzések</span>
+        </button>
+        <button class="nav-item" data-tab="sos">
+          <i data-lucide="alert-triangle"></i>
+          <span>SOS Útmutató</span>
+        </button>
+        <button class="nav-item" data-tab="settings">
+          <i data-lucide="settings"></i>
+          <span>Beállítások</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <p>Készült szeretettel ❤️</p>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top header -->
+      <header class="top-header">
+        <div class="header-title">
+          <h2 id="page-title">Üdvözöllek a DiaLife-ban!</h2>
+          <p id="page-subtitle" class="text-muted">Kövesd nyomon az egészséged egyszerűen és tisztán.</p>
+        </div>
+        <div class="header-actions">
+          <div class="current-date-badge">
+            <i data-lucide="calendar"></i>
+            <span id="current-date">2026. július 24.</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- TAB: DASHBOARD -->
+      <section id="tab-dashboard" class="tab-content active">
+        <!-- Metric Cards Grid -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-label">Utolsó mért érték</span>
+              <div class="metric-icon bg-blue-light text-blue">
+                <i data-lucide="droplet"></i>
+              </div>
+            </div>
+            <div class="metric-value-container">
+              <span class="metric-value" id="stat-last-bg">-</span>
+              <span class="metric-unit">mmol/l</span>
+            </div>
+            <div class="metric-footer" id="stat-last-time">Nincs adat</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-label">Átlagos vércukor</span>
+              <div class="metric-icon bg-green-light text-green">
+                <i data-lucide="activity"></i>
+              </div>
+            </div>
+            <div class="metric-value-container">
+              <span class="metric-value" id="stat-avg-bg">-</span>
+              <span class="metric-unit">mmol/l</span>
+            </div>
+            <div class="metric-footer" id="stat-avg-status">Céltartomány: 4.0 - 8.0</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-label">Céltartományban (TIR)</span>
+              <div class="metric-icon bg-purple-light text-purple">
+                <i data-lucide="percent"></i>
+              </div>
+            </div>
+            <div class="metric-value-container">
+              <span class="metric-value" id="stat-tir">-</span>
+              <span class="metric-unit">%</span>
+            </div>
+            <div class="metric-footer" id="stat-tir-details">Optimális értékek aránya</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <span class="metric-label">Mai szénhidrát / inzulin</span>
+              <div class="metric-icon bg-orange-light text-orange">
+                <i data-lucide="utensils"></i>
+              </div>
+            </div>
+            <div class="metric-value-container">
+              <span class="metric-value" id="stat-carb-ins">-</span>
+            </div>
+            <div class="metric-footer" id="stat-carb-ins-sub">g szénhidrát / egység inzulin</div>
+          </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="dashboard-grid">
+          <!-- Trend Chart Card -->
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Vércukorszint trendek</h3>
+              <div class="chart-filters">
+                <button class="filter-btn active" data-range="7">7 nap</button>
+                <button class="filter-btn" data-range="30">30 nap</button>
+                <button class="filter-btn" data-range="all">Mind</button>
+              </div>
+            </div>
+            <div class="card-body chart-container">
+              <canvas id="trendChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Distribution Chart Card -->
+          <div class="card distribution-card">
+            <div class="card-header">
+              <h3>Eloszlási statisztika</h3>
+            </div>
+            <div class="card-body donut-chart-container">
+              <canvas id="distributionChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Log & Recent Entries Panel -->
+        <div class="dashboard-grid grid-2-1">
+          <div class="card">
+            <div class="card-header">
+              <h3>Legutóbbi bejegyzések</h3>
+              <button class="btn btn-text" id="btn-view-all-history">Mérési előzmények megnyitása</button>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Időpont</th>
+                      <th>Kategória</th>
+                      <th>Vércukor</th>
+                      <th>Inzulin (G/H)</th>
+                      <th>Szénhidrát</th>
+                      <th>Művelet</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recent-logs-tbody">
+                    <!-- Dinamikusan generált tartalom -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="card quick-actions-card">
+            <div class="card-header">
+              <h3>Gyors elérés</h3>
+            </div>
+            <div class="card-body quick-actions-body">
+              <button class="quick-btn" data-go-tab="new-entry">
+                <div class="quick-icon bg-green-light text-green"><i data-lucide="plus"></i></div>
+                <div class="quick-text">
+                  <h4>Mérés rögzítése</h4>
+                  <p>Írd be a legutóbbi értékeidet</p>
+                </div>
+              </button>
+              <button class="quick-btn" data-go-tab="sos">
+                <div class="quick-icon bg-red-light text-red"><i data-lucide="shield-alert"></i></div>
+                <div class="quick-text">
+                  <h4>SOS segítség</h4>
+                  <p>Hipo és hiperglikémia esetén</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: NEW ENTRY -->
+      <section id="tab-new-entry" class="tab-content">
+        <div class="card max-w-2xl mx-auto">
+          <div class="card-header">
+            <h3>Mérési adatok rögzítése</h3>
+          </div>
+          <div class="card-body">
+            <form id="entry-form" class="entry-form">
+              <div class="form-row grid-2">
+                <div class="form-group">
+                  <label for="input-date">Dátum és idő</label>
+                  <input type="datetime-local" id="input-date" required>
+                </div>
+                <div class="form-group">
+                  <label for="input-category">Kategória</label>
+                  <select id="input-category" required>
+                    <option value="Éhgyomri">Éhgyomri</option>
+                    <option value="Reggeli előtt">Reggeli előtt</option>
+                    <option value="Reggeli után">Reggeli után</option>
+                    <option value="Ebéd előtt">Ebéd előtt</option>
+                    <option value="Ebéd után">Ebéd után</option>
+                    <option value="Vacsora előtt">Vacsora előtt</option>
+                    <option value="Vacsora után">Vacsora után</option>
+                    <option value="Lefekvés előtt">Lefekvés előtt</option>
+                    <option value="Egyéb">Egyéb</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-divider">Mért értékek</div>
+
+              <div class="form-row grid-3">
+                <div class="form-group">
+                  <label for="input-bg">Vércukor (mmol/l)</label>
+                  <div class="input-with-unit">
+                    <input type="number" id="input-bg" step="0.1" min="0" placeholder="pl. 5.6">
+                    <span class="unit">mmol/l</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="input-insulin-bolus">Gyors inzulin (Bolus)</label>
+                  <div class="input-with-unit">
+                    <input type="number" id="input-insulin-bolus" step="0.5" min="0" placeholder="egység">
+                    <span class="unit">E</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="input-insulin-basal">Lassú inzulin (Basal)</label>
+                  <div class="input-with-unit">
+                    <input type="number" id="input-insulin-basal" step="0.5" min="0" placeholder="egység">
+                    <span class="unit">E</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-row grid-2">
+                <div class="form-group">
+                  <label for="input-carbs">Szénhidrátbevitel</label>
+                  <div class="input-with-unit">
+                    <input type="number" id="input-carbs" step="1" min="0" placeholder="pl. 40">
+                    <span class="unit">g</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="input-notes">Megjegyzés / Tünetek</label>
+                  <input type="text" id="input-notes" placeholder="pl. könnyű séta étkezés után, fáradtság">
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="btn-form-cancel">Mégse</button>
+                <button type="submit" class="btn btn-primary">Mentés</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: HISTORY -->
+      <section id="tab-history" class="tab-content">
+        <div class="card">
+          <div class="card-header flex-between-resp">
+            <h3>Mérési előzmények</h3>
+            <div class="history-controls">
+              <input type="text" id="search-history" placeholder="Keresés a megjegyzésekben...">
+              <select id="filter-category">
+                <option value="all">Összes kategória</option>
+                <option value="Éhgyomri">Éhgyomri</option>
+                <option value="Étkezés előtt">Étkezések előtt</option>
+                <option value="Étkezés után">Étkezések után</option>
+                <option value="Lefekvés előtt">Lefekvés előtt</option>
+              </select>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Időpont</th>
+                    <th>Kategória</th>
+                    <th>Vércukor (mmol/l)</th>
+                    <th>Gyorshatású Inzulin</th>
+                    <th>Hosszúhatású Inzulin</th>
+                    <th>Szénhidrát (g)</th>
+                    <th>Megjegyzés</th>
+                    <th>Műveletek</th>
+                  </tr>
+                </thead>
+                <tbody id="history-logs-tbody">
+                  <!-- Dinamikus történet -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: SOS -->
+      <section id="tab-sos" class="tab-content">
+        <div class="sos-container">
+          <!-- Hypo card -->
+          <div class="card border-red">
+            <div class="card-header bg-red-pale">
+              <div class="sos-title text-red">
+                <i data-lucide="chevron-down"></i>
+                <h3>Alacsony vércukor (Hipoglikémia &lt; 4.0 mmol/l)</h3>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="sos-symptoms">
+                <strong>Gyakori tünetek:</strong> remegés, izzadás, szédülés, éhségérzet, zavarodottság, szapora szívverés.
+              </div>
+              <ul class="sos-steps">
+                <li>
+                  <div class="step-num">1</div>
+                  <div class="step-text"><strong>15 gramm gyors szénhidrát:</strong> Igyon meg 1.5-2 dl gyümölcslevet vagy cukros üdítőt, vagy egyen meg 3-4 db szőlőcukrot azonnal. (Kerülje a csokoládét/zsíros ételeket ilyenkor, mert a zsír lassítja a felszívódást!)</div>
+                </li>
+                <li>
+                  <div class="step-num">2</div>
+                  <div class="step-text"><strong>Várjon 15 percet és mérje újra!</strong> Ha még mindig 4.0 alatt van a vércukor, ismételje meg a gyors szénhidrát bevitelt.</div>
+                </li>
+                <li>
+                  <div class="step-num">3</div>
+                  <div class="step-text"><strong>Lassú szénhidrát bevitele:</strong> Ha a vércukor szint már elérte a céltartományt, egyen egy kevés lassú szénhidrátot (pl. egy korpás kekszet, kenyeret) az ismételt visszaesés megelőzésére.</div>
+                </li>
+              </ul>
+              <div class="alert-box bg-red-light text-red">
+                <i data-lucide="phone-call"></i>
+                <span><strong>Eszméletvesztés vagy súlyos zavarodottság esetén:</strong> Glükagon injekció beadása szükséges, és azonnal hívni kell a mentőket (112)!</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hyper card -->
+          <div class="card border-orange">
+            <div class="card-header bg-orange-pale">
+              <div class="sos-title text-orange">
+                <i data-lucide="chevron-up"></i>
+                <h3>Magas vércukor (Hiperglikémia &gt; 10.0 mmol/l)</h3>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="sos-symptoms">
+                <strong>Gyakori tünetek:</strong> fokozott szomjúság, gyakori vizelés, száraz száj, fáradtság, homályos látás.
+              </div>
+              <ul class="sos-steps">
+                <li>
+                  <div class="step-num">1</div>
+                  <div class="step-text"><strong>Bőséges folyadékfogyasztás:</strong> Igyon sok tiszta vizet, hogy segítse a veséket a felesleges cukor kiürítésében a vizelettel.</div>
+                </li>
+                <li>
+                  <div class="step-num">2</div>
+                  <div class="step-text"><strong>Inzulin korrekció:</strong> Szükség esetén adjon be korrekciós gyorshatású inzulint (az orvos által meghatározott korrekciós faktor alapján).</div>
+                </li>
+                <li>
+                  <div class="step-num">3</div>
+                  <div class="step-text"><strong>Fizikai aktivitás korlátozása:</strong> Nagyon magas érték (&gt;15 mmol/l) és aceton jelenléte (vizeletből vagy kilégzésből tesztelve) esetén a testmozgás ellenjavallt, mert tovább növelheti a ketontestek termelődését.</div>
+                </li>
+              </ul>
+              <div class="alert-box bg-orange-light text-orange">
+                <i data-lucide="info"></i>
+                <span><strong>Ketoacidózis jelei (hányinger, hányás, gyümölcsillatú lehelet, nehézlégzés):</strong> Azonnali orvosi ellátást vagy sürgősségi osztály felkeresését igénylik!</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: SETTINGS -->
+      <section id="tab-settings" class="tab-content">
+        <div class="card max-w-2xl mx-auto">
+          <div class="card-header">
+            <h3>Beállítások és Adatmentés</h3>
+          </div>
+          <div class="card-body settings-body">
+            <div class="settings-section">
+              <h4>Egyéni céltartomány beállítása</h4>
+              <p class="text-muted">A statisztikák és diagramok ezek alapján határozzák meg a céltartományon belüli időt.</p>
+              <div class="form-row grid-2 mt-3">
+                <div class="form-group">
+                  <label for="target-min">Minimum érték (mmol/l)</label>
+                  <input type="number" id="target-min" step="0.1" value="4.0">
+                </div>
+                <div class="form-group">
+                  <label for="target-max">Maximum érték (mmol/l)</label>
+                  <input type="number" id="target-max" step="0.1" value="8.0">
+                </div>
+              </div>
+              <button class="btn btn-primary mt-3" id="btn-save-targets">Célértékek mentése</button>
+            </div>
+
+            <hr class="settings-divider">
+
+            <div class="settings-section">
+              <h4>Adatok biztonsági mentése</h4>
+              <p class="text-muted">Minden adatod helyben, a böngésződben van mentve. Érdemes rendszeresen mentést készíteni róluk.</p>
+              <div class="btn-group mt-3">
+                <button class="btn btn-outline" id="btn-export-json">
+                  <i data-lucide="download"></i>
+                  <span>JSON biztonsági mentés</span>
+                </button>
+                <button class="btn btn-outline" id="btn-export-csv">
+                  <i data-lucide="file-spreadsheet"></i>
+                  <span>CSV exportálás orvosnak</span>
+                </button>
+              </div>
+            </div>
+
+            <hr class="settings-divider">
+
+            <div class="settings-section">
+              <h4>Adatok visszaállítása</h4>
+              <p class="text-muted">Töltsd be a korábban lementett JSON fájlodat az adatok visszaállításához.</p>
+              <div class="import-zone mt-3">
+                <input type="file" id="import-file" accept=".json" class="hidden-input">
+                <button class="btn btn-secondary" id="btn-trigger-import">
+                  <i data-lucide="upload"></i>
+                  <span>JSON fájl kiválasztása</span>
+                </button>
+                <span id="import-file-name" class="text-muted ml-2">Nincs fájl kiválasztva</span>
+              </div>
+            </div>
+
+            <hr class="settings-divider">
+
+            <div class="settings-section">
+              <h4 class="text-danger">Adatok törlése</h4>
+              <p class="text-muted">Ez a művelet visszaállíthatatlanul kitöröl minden rögzített mérést és beállítást.</p>
+              <button class="btn btn-danger mt-3" id="btn-clear-all">
+                <i data-lucide="trash-2"></i>
+                <span>Összes adat végleges törlése</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Custom Script -->
+  <script src="app.js"></script>
+</body>
+</html>
