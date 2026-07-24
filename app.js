@@ -5,7 +5,9 @@ let appState = {
   entries: [],
   settings: {
     targetMin: 4.0,
-    targetMax: 8.0
+    targetMax: 8.0,
+    basalTime: '22:00',
+    mealDelay: '120'
   }
 };
 
@@ -26,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initForms();
   initSettings();
   initBackupRestore();
+  initNotifications();
   
   // Render Dashboard
   updateDashboard();
@@ -43,6 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(reg => console.log('Service Worker registered successfully!', reg))
       .catch(err => console.error('Service Worker registration failed:', err));
   }
+
+  // Periodic check for Daily Basal Insulin Reminder (every 60s)
+  setInterval(checkBasalReminder, 60000);
 });
 
 // Set default datetime input to now
@@ -66,9 +72,12 @@ function loadData() {
   const storedSettings = localStorage.getItem('dialife_settings');
 
   if (storedSettings) {
-    appState.settings = JSON.parse(storedSettings);
+    const parsed = JSON.parse(storedSettings);
+    appState.settings = { ...appState.settings, ...parsed };
     document.getElementById('target-min').value = appState.settings.targetMin;
     document.getElementById('target-max').value = appState.settings.targetMax;
+    document.getElementById('reminder-basal-time').value = appState.settings.basalTime || '22:00';
+    document.getElementById('reminder-meal-delay').value = appState.settings.mealDelay || '120';
   }
 
   if (storedData) {
@@ -239,6 +248,9 @@ function initForms() {
     
     saveData();
     showToast('Bejegyzés sikeresen mentve!', 'success');
+
+    // Schedule post-meal reminder if applicable
+    scheduleMealReminder(category);
     
     // Clear and redirect to dashboard
     form.reset();
@@ -436,6 +448,9 @@ function updateDashboard() {
 
   // Draw Charts
   initCharts(bgEntries);
+
+  // Update the daily progress tracker banner
+  updateDailyTracker();
 }
 
 // Get range class for styling text
@@ -725,4 +740,171 @@ function showToast(message, type = 'success') {
       toast.remove();
     });
   }, 3000);
+}
+
+// =============================================
+// DAILY PROGRESS TRACKER
+// =============================================
+
+function updateDailyTracker() {
+  const today = new Date();
+  const todayEntries = appState.entries.filter(e => {
+    const d = new Date(e.datetime);
+    return d.getDate() === today.getDate() &&
+           d.getMonth() === today.getMonth() &&
+           d.getFullYear() === today.getFullYear();
+  });
+
+  // Measurement count progress (goal: 4/day)
+  const DAILY_GOAL = 4;
+  const measCount = todayEntries.filter(e => e.bg !== null).length;
+  const measPct = Math.min(Math.round((measCount / DAILY_GOAL) * 100), 100);
+  document.getElementById('tracker-measurements-count').innerText = `${measCount} / ${DAILY_GOAL}`;
+  document.getElementById('tracker-measurements-bar').style.width = `${measPct}%`;
+
+  // Today's Time-In-Range
+  const todayBg = todayEntries.filter(e => e.bg !== null);
+  let tirPct = 0;
+  if (todayBg.length > 0) {
+    const inRange = todayBg.filter(e => e.bg >= appState.settings.targetMin && e.bg <= appState.settings.targetMax).length;
+    tirPct = Math.round((inRange / todayBg.length) * 100);
+  }
+  document.getElementById('tracker-tir-count').innerText = `${tirPct}%`;
+  document.getElementById('tracker-tir-bar').style.width = `${tirPct}%`;
+
+  // Change TIR bar color based on quality
+  const tirBar = document.getElementById('tracker-tir-bar');
+  tirBar.className = 'progress-bar-fill';
+  if (tirPct >= 70) {
+    tirBar.classList.add('bg-green');
+  } else if (tirPct >= 40) {
+    tirBar.classList.add('bg-teal');
+  } else {
+    tirBar.style.backgroundColor = '#f97316'; // orange for low TIR
+  }
+}
+
+// =============================================
+// NOTIFICATION SYSTEM
+// =============================================
+
+function initNotifications() {
+  const permBtn = document.getElementById('btn-request-notification-permission');
+  const saveRemBtn = document.getElementById('btn-save-reminders');
+  const testBtn = document.getElementById('btn-test-notification');
+  const statusSpan = document.getElementById('notification-permission-status');
+
+  // Check and display current permission state
+  updatePermissionStatus();
+
+  permBtn.addEventListener('click', async () => {
+    if (!('Notification' in window)) {
+      showToast('A böngésződ nem támogatja az értesítéseket.', 'error');
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    updatePermissionStatus();
+    if (permission === 'granted') {
+      showToast('Értesítések engedélyezve!', 'success');
+    } else {
+      showToast('Az értesítések engedélyezése elutasítva.', 'error');
+    }
+  });
+
+  saveRemBtn.addEventListener('click', () => {
+    appState.settings.basalTime = document.getElementById('reminder-basal-time').value;
+    appState.settings.mealDelay = document.getElementById('reminder-meal-delay').value;
+    saveData();
+    showToast('Emlékeztető beállítások mentve!', 'success');
+  });
+
+  testBtn.addEventListener('click', () => {
+    if (Notification.permission !== 'granted') {
+      showToast('Először engedélyezd az értesítéseket!', 'error');
+      return;
+    }
+    showToast('Teszt értesítés 5 másodperc múlva...', 'success');
+    setTimeout(() => {
+      sendNotification(
+        '🩸 DiaLife – Teszt értesítés',
+        'Az értesítési rendszer sikeresen működik! Gondoskodj az egészségedről.'
+      );
+    }, 5000);
+  });
+}
+
+function updatePermissionStatus() {
+  const statusSpan = document.getElementById('notification-permission-status');
+  const permBtn = document.getElementById('btn-request-notification-permission');
+  if (!('Notification' in window)) {
+    statusSpan.innerText = 'Értesítések nem támogatottak';
+    permBtn.disabled = true;
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    statusSpan.innerText = '✓ Értesítések engedélyezve';
+    permBtn.style.borderColor = 'var(--green)';
+    permBtn.style.color = 'var(--green)';
+  } else if (Notification.permission === 'denied') {
+    statusSpan.innerText = '✗ Értesítések le vannak tiltva (böngésző beállítás)';
+    permBtn.disabled = true;
+  } else {
+    statusSpan.innerText = 'Rendszerértesítések engedélyezése';
+  }
+}
+
+function sendNotification(title, body, icon = 'icon-192.png') {
+  if (Notification.permission !== 'granted') return;
+  try {
+    new Notification(title, { body, icon });
+  } catch (e) {
+    // Some browsers (esp. mobile) require SW-based notifications
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification(title, { body, icon });
+      });
+    }
+  }
+}
+
+// Check if it's time for the daily basal insulin reminder
+let basalReminderFiredToday = false;
+function checkBasalReminder() {
+  if (Notification.permission !== 'granted') return;
+  const basalTime = appState.settings.basalTime || '22:00';
+  const [targetHour, targetMin] = basalTime.split(':').map(Number);
+  const now = new Date();
+  const todayKey = now.toDateString();
+  const lastFiredKey = localStorage.getItem('dialife_basal_fired');
+
+  // Fire if current time matches the set hour/minute (within the same minute) and not already fired today
+  if (
+    now.getHours() === targetHour &&
+    now.getMinutes() === targetMin &&
+    lastFiredKey !== todayKey
+  ) {
+    localStorage.setItem('dialife_basal_fired', todayKey);
+    sendNotification(
+      '💉 DiaLife – Bázis inzulin emlékeztető',
+      `Eljött az ideje a hosszúhatású inzulin beadásának! (Beállított idő: ${basalTime})`
+    );
+  }
+}
+
+// Schedule a meal-after reminder when an "előtt" category entry is saved
+function scheduleMealReminder(categoryName) {
+  const delayMin = parseInt(appState.settings.mealDelay || '120', 10);
+  if (delayMin <= 0) return;
+  if (Notification.permission !== 'granted') return;
+  // Only schedule for pre-meal categories
+  const preMealCategories = ['Reggeli előtt', 'Ebéd előtt', 'Vacsora előtt'];
+  if (!preMealCategories.some(c => categoryName.includes(c.split(' ')[0]))) return;
+
+  const mealLabel = categoryName.replace(' előtt', '');
+  setTimeout(() => {
+    sendNotification(
+      `🩸 DiaLife – Étkezés utáni mérés ideje!`,
+      `${delayMin} perc telt el a(z) ${mealLabel} óta. Ne felejtsd el megmérni a vércukrod!`
+    );
+  }, delayMin * 60 * 1000);
 }

@@ -140,6 +140,41 @@
           </div>
         </div>
 
+        <!-- Daily Tracker Banner -->
+        <div class="card daily-tracker-card">
+          <div class="card-body daily-tracker-body">
+            <div class="tracker-info">
+              <div class="tracker-icon bg-teal-light text-teal">
+                <i data-lucide="target"></i>
+              </div>
+              <div>
+                <h3>Mai Célkövető</h3>
+                <p class="text-muted">Teljesíts napi legalább 4 mérést a pontosabb képért!</p>
+              </div>
+            </div>
+            <div class="tracker-progress-container">
+              <div class="progress-item">
+                <div class="progress-labels">
+                  <span class="progress-title">Napi mérések</span>
+                  <span class="progress-value" id="tracker-measurements-count">0 / 4</span>
+                </div>
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill bg-teal" id="tracker-measurements-bar" style="width: 0%"></div>
+                </div>
+              </div>
+              <div class="progress-item">
+                <div class="progress-labels">
+                  <span class="progress-title">Ma céltartományban</span>
+                  <span class="progress-value" id="tracker-tir-count">0%</span>
+                </div>
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill bg-green" id="tracker-tir-bar" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Charts Section -->
         <div class="dashboard-grid">
           <!-- Trend Chart Card -->
@@ -430,6 +465,40 @@
                 </div>
               </div>
               <button class="btn btn-primary mt-3" id="btn-save-targets">Célértékek mentése</button>
+            </div>
+
+            <hr class="settings-divider">
+
+            <div class="settings-section">
+              <h4>Emlékeztetők és Értesítések</h4>
+              <p class="text-muted">Engedélyezd az emlékeztetőket a rendszeres mérésekhez és a bázis inzulinhoz.</p>
+              
+              <div class="notification-settings-group mt-3">
+                <button class="btn btn-secondary" id="btn-request-notification-permission">
+                  <i data-lucide="bell"></i>
+                  <span id="notification-permission-status">Rendszerértesítések engedélyezése</span>
+                </button>
+              </div>
+
+              <div class="form-row grid-2 mt-3">
+                <div class="form-group">
+                  <label for="reminder-basal-time">Bázis inzulin emlékeztető ideje</label>
+                  <input type="time" id="reminder-basal-time" value="22:00">
+                </div>
+                <div class="form-group">
+                  <label for="reminder-meal-delay">Étkezés utáni mérés emlékeztető</label>
+                  <select id="reminder-meal-delay">
+                    <option value="90">90 perc (1.5 óra)</option>
+                    <option value="120" selected>120 perc (2 óra)</option>
+                    <option value="180">180 perc (3 óra)</option>
+                    <option value="0">Kikapcsolva</option>
+                  </select>
+                </div>
+              </div>
+              <div class="btn-group mt-3">
+                <button class="btn btn-primary" id="btn-save-reminders">Emlékeztetők mentése</button>
+                <button class="btn btn-outline" id="btn-test-notification">Teszt értesítés indítása (5mp)</button>
+              </div>
             </div>
 
             <hr class="settings-divider">
